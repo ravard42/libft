@@ -5,119 +5,84 @@
 /*                                                    +:+ +:+         +:+     */
 /*   By: ravard <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2016/04/14 13:26:36 by ravard            #+#    #+#             */
-/*   Updated: 2016/06/01 19:09:42 by ravard           ###   ########.fr       */
+/*   Created: 2016/10/05 16:42:58 by ravard            #+#    #+#             */
+/*   Updated: 2016/10/05 16:51:14 by ravard           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "libft.h"
 
-static t_lst			*search_fd_statyk(int fd, t_lst *list)
+int		process_one(char *ptr, char *buf, char **line)
 {
-	t_lst	*tmp;
-	t_lst	*new;
-
-	tmp = NULL;
-	if (list)
-	{
-		while (list->prev)
-			list = list->prev;
-		while (list)
-		{
-			if (list->fd == fd)
-				return (list);
-			tmp = list;
-			list = list->next;
-		}
-	}
-	new = (t_lst *)malloc(sizeof(t_lst));
-	new->fd = fd;
-	new->s = NULL;
-	new->prev = tmp;
-	new->next = NULL;
-	if (tmp)
-		tmp->next = new;
-	return (new);
-}
-
-static int				ft_read(t_lst *list)
-{
-	int	ret;
-	int	i;
-
-	ret = read(list->fd, list->s, BUFF_SIZE);
-	if (ret == -1)
-		return (-1);
-	else if (ret == 0)
-		return (0);
-	i = ret - 1;
-	while (++i < BUFF_SIZE)
-		list->s[i] = '\0';
-	return (ret);
-}
-
-static int				looking_for_line(t_lst *list)
-{
-	int	i;
-
-	i = -1;
-	while (list->s[++i])
-		if (list->s[i] == '\n')
-			return (i);
-	return (-1);
-}
-
-static int				fill_line(t_lst *list, char **line)
-{
-	int		n;
+	int		len;
 	char	*tmp;
 
-	if ((n = looking_for_line(list)) == -1)
+	len = (*line) ? ft_strlen(*line) + ptr - buf + 1 : ptr - buf + 1;
+	tmp = (char *)ft_memalloc(sizeof(char) * len);
+	buf[ptr - buf] = '\0';
+	if (*line)
 	{
-		tmp = ft_strnew(ft_strlen(*line) + ft_strlen(list->s));
 		ft_strcpy(tmp, *line);
-		ft_strcat(tmp, list->s);
 		free(*line);
-		*line = ft_strdup(tmp);
-		free(tmp);
-		ft_strclr(list->s);
-		return (0);
+		ft_strcat(tmp, buf);
 	}
 	else
-	{
-		tmp = ft_strnew(ft_strlen(*line) + n);
-		ft_strcpy(tmp, *line);
-		ft_strncat(tmp, list->s, n);
-		free(*line);
-		*line = ft_strdup(tmp);
-		free(tmp);
-		ft_memmove(list->s, list->s + n + 1, ft_strlen(list->s) - n);
-		return (1);
-	}
+		ft_strcpy(tmp, buf);
+	*line = tmp;
+	ft_strncpy(buf, buf + (ptr - buf) + 1, BUFF_SIZE - (ptr - buf));
+	return (1);
 }
 
-int						get_next_line(int const fd, char **line)
+int		process_zero(char *buf, char **line)
 {
-	static t_lst		*list = NULL;
-	int					ret;
+	int		len;
+	char	*tmp;
 
-	if (line == NULL || fd < 0 || fd == 1 ||
-			fd == 2 || BUFF_SIZE <= 0)
-		return (-1);
-	*line = ft_strnew(0);
-	list = search_fd_statyk(fd, list);
-	if (list->s == NULL)
-		list->s = ft_strnew(BUFF_SIZE);
-	if (ft_strlen(list->s) == 0)
+	len = (*line) ? ft_strlen(*line) + BUFF_SIZE + 1 : BUFF_SIZE + 1;
+	tmp = (char *)ft_memalloc(sizeof(char) * len);
+	if (*line)
 	{
-		ret = ft_read(list);
-		if (ret == -1)
-			return (-1);
-		else if (ret == 0)
-			return (0);
+		ft_strcpy(tmp, *line);
+		free(*line);
+		ft_strcat(tmp, buf);
 	}
-	while (fill_line(list, line) == 0 &&
-			ft_read(list) != 0)
-		;
+	else
+		ft_strcpy(tmp, buf);
+	*line = tmp;
+	buf[0] = '\0';
+	return (0);
+}
+
+int		buf_process(char *buf, char **line)
+{
+	char	*ptr;
+
+	if (buf[0] == '\0')
+		return (0);
+	if ((ptr = ft_strchr(buf, '\n')))
+		return (process_one(ptr, buf, line));
+	else
+		return (process_zero(buf, line));
+}
+
+int		get_next_line(int fd, char **line)
+{
+	static char		*buf[MAX_FD + 1] = {NULL};
+	int				ret;
+	int				cond;
+
+	if (fd == 1 || fd == 2 || fd < 0 || line == NULL)
+		return (-1);
+	*line = NULL;
+	buf[fd] = (buf[fd] == NULL) ? (char *)ft_memalloc(sizeof(char) * (BUFF_SIZE + 1)) : buf[fd]; 
+	while (buf_process(buf[fd], line) != 1)
+	{
+		cond = (*line != NULL);
+		if ((ret = read(fd, buf[fd], BUFF_SIZE)) == 0)
+			return (cond);
+		else if (ret == -1)
+			return (-1);
+		buf[fd][ret] = '\0';
+	}
 	return (1);
 }

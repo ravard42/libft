@@ -13,27 +13,12 @@
 #ifndef LIBFT_H
 # define LIBFT_H
 
-# define BUFF_SIZE 2
-
 # include <fcntl.h>
 # include <unistd.h>
 # include <stdlib.h>
 
-typedef struct			s_lst
-{
-	int							fd;
-	char						*s;
-	struct s_lst				*prev;
-	struct s_lst				*next;
-}						t_lst;
-
-typedef struct			s_splitlist
-{
-	int					indice;
-	int					len;
-	struct s_splitlist	*prev;
-	struct s_splitlist	*next;
-}						t_splitlist;
+# define MAX_FD 2048
+# define BUFF_SIZE 7
 
 typedef struct			s_list
 {
@@ -42,7 +27,6 @@ typedef struct			s_list
 	struct s_list		*next;
 }						t_list;
 
-int						get_next_line(int const fd, char **line);
 float					v_abs_diff(float a, float b);
 char					*ft_rm_whitespace(char *str);
 char					*rm_space_at_the_beginning(char *str, char c);
@@ -113,5 +97,6 @@ void					ft_lstdel(t_list **alst, void (*del)(void *, size_t));
 void					ft_lstadd(t_list **alst, t_list *new);
 void					ft_lstiter(t_list *lst, void (*f)(t_list *elem));
 t_list					*ft_lstmap(t_list *lst, t_list *(*f)(t_list *elem));
+int	get_next_line(int fd, char **line);
 
 #endif
