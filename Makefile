@@ -70,7 +70,7 @@ SRC =	v_abs_diff.c\
 	get_next_line.c\
 
 OBJ = $(SRC:.c=.o)
-INCLUDE = ../includes
+INCLUDE = ./
 
 
 all: $(NAME)
